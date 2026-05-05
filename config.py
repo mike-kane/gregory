@@ -1,0 +1,16 @@
+WAKE_WORD_MODEL = "hey_gregory"
+SILENCE_THRESHOLD = 500
+SILENCE_TIMEOUT = 2.0
+WHISPER_MODEL = "whisper-1"
+CLAUDE_MODEL = "claude-sonnet-4-5"
+SYSTEM_PROMPT = ""              # Gregory's personality — set this to taste
+MAX_HISTORY_TURNS = 10
+ELEVENLABS_VOICE_ID = ""
+TTS_CACHE_DIR = "/tmp/gregory_tts"
+MOUTH_OPEN_THRESHOLD = 0.15
+MOTOR_FPS = 50
+MOUTH_AIN1 = 17
+MOUTH_AIN2 = 27
+TAIL_BIN1  = 22
+TAIL_BIN2  = 23
+AUDIO_DEVICE = "plughw:1,0"

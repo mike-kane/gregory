@@ -1,0 +1,11 @@
+anthropic
+openai
+elevenlabs
+openwakeword
+pyaudio
+librosa
+numpy
+RPi.GPIO
+gpiozero
+pygame
+python-dotenv
