@@ -22,12 +22,28 @@ class Conversation:
             "max_tokens": 512,
             "messages": self._history,
         }
+
         if config.SYSTEM_PROMPT:
-            kwargs["system"] = config.SYSTEM_PROMPT
+            # cache_control marks the system prompt for server-side caching.
+            # Cost drops to ~10% of normal input token price on cache hits,
+            # and latency improves — both matter on the Pi during live conversation.
+            kwargs["system"] = [
+                {
+                    "type": "text",
+                    "text": config.SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
 
         response = self._client.messages.create(**kwargs)
         reply = response.content[0].text
         self._history.append({"role": "assistant", "content": reply})
+
+        # Log cache stats when available — useful during development to confirm hits
+        usage = response.usage
+        if hasattr(usage, "cache_read_input_tokens") and usage.cache_read_input_tokens:
+            print(f"[cache hit: {usage.cache_read_input_tokens} tokens read from cache]")
+
         print(f"Gregory: {reply}")
         return reply
 
