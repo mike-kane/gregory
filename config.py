@@ -6,6 +6,7 @@ CLAUDE_MODEL = "claude-sonnet-4-5"
 SYSTEM_PROMPT = ""              # Gregory's personality — set this to taste
 MAX_HISTORY_TURNS = 10
 ELEVENLABS_VOICE_ID = ""
+ELEVENLABS_MODEL_ID = "eleven_flash_v2_5"   # eleven_multilingual_v2 if flash unavailable
 TTS_CACHE_DIR = "/tmp/gregory_tts"
 MOUTH_OPEN_THRESHOLD = 0.15
 MOTOR_FPS = 50

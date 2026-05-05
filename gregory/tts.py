@@ -18,14 +18,14 @@ class TTS:
         path = os.path.join(config.TTS_CACHE_DIR, f"{key}.mp3")
 
         if not os.path.exists(path):
+            # convert() returns bytes directly in SDK v1+
             audio = self._client.text_to_speech.convert(
                 voice_id=config.ELEVENLABS_VOICE_ID,
                 text=text,
-                model_id="eleven_flash_v2_5",
+                model_id=config.ELEVENLABS_MODEL_ID,
             )
             with open(path, "wb") as f:
-                for chunk in audio:
-                    f.write(chunk)
+                f.write(audio)
             print(f"TTS cached to {path}")
         else:
             print(f"TTS cache hit: {path}")
