@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(python -m venv venv)",
+      "Bash(venv\\\\Scripts\\\\pip install *)",
+      "PowerShell(cd \"c:\\\\Users\\\\medio\\\\OneDrive\\\\Desktop\\\\Gregory\"; $env:PYTHONUTF8=1; .\\\\venv\\\\Scripts\\\\python tests\\\\test_pipeline.py --text \"tell me a fish joke\")"
     ]
   }
 }

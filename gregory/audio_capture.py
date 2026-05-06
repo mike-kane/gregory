@@ -1,5 +1,9 @@
 """Record from the microphone until a silence timeout is reached."""
 
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import tempfile
 import wave
 import pyaudio

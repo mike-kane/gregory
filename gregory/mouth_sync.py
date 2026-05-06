@@ -1,5 +1,9 @@
 """Analyse audio amplitude to produce a per-frame mouth open/close timeline."""
 
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import numpy as np
 import librosa
 import config

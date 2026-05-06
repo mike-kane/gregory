@@ -1,5 +1,9 @@
 """DRV8833 motor control via GPIO. Stubs out gracefully on non-Pi hardware."""
 
+import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import threading
 import time
 import config

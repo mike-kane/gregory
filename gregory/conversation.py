@@ -1,6 +1,9 @@
 """Manage a multi-turn conversation with Claude."""
 
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import anthropic
 import config
 
@@ -54,7 +57,10 @@ if __name__ == "__main__":
 
     conv = Conversation()
     while True:
-        user = input("You: ")
+        try:
+            user = input("You: ")
+        except EOFError:
+            break
         if not user.strip():
             break
-        print(conv.send(user))
+        conv.send(user)  # send() already prints the reply

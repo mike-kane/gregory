@@ -2,6 +2,9 @@
 
 import hashlib
 import os
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 import config
 
 os.makedirs(config.TTS_CACHE_DIR, exist_ok=True)
@@ -18,14 +21,15 @@ class TTS:
         path = os.path.join(config.TTS_CACHE_DIR, f"{key}.mp3")
 
         if not os.path.exists(path):
-            # convert() returns bytes directly in SDK v1+
             audio = self._client.text_to_speech.convert(
                 voice_id=config.ELEVENLABS_VOICE_ID,
                 text=text,
                 model_id=config.ELEVENLABS_MODEL_ID,
             )
             with open(path, "wb") as f:
-                f.write(audio)
+                for chunk in audio:
+                    if isinstance(chunk, bytes):
+                        f.write(chunk)
             print(f"TTS cached to {path}")
         else:
             print(f"TTS cache hit: {path}")
