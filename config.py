@@ -1,5 +1,4 @@
 WAKE_WORD_MODEL = "hey_gregory"
-RECORD_RATE = 44000                # must match PYGAME_FREQUENCY — confirmed native rate
 SILENCE_THRESHOLD = 500
 SILENCE_TIMEOUT = 2.0
 WHISPER_MODEL = "whisper-1"
@@ -15,8 +14,6 @@ MOUTH_AIN1 = 17
 MOUTH_AIN2 = 27
 TAIL_BIN1  = 22
 TAIL_BIN2  = 23
-AUDIO_INPUT_DEVICE  = 0            # USB microphone (card 0)
-AUDIO_OUTPUT_DEVICE = 1            # USB audio adapter (card 1)
 AUDIO_DEVICE = "plughw:1,0"       # ALSA device string for pygame / aplay
 PYGAME_FREQUENCY = 44000           # confirmed native rate for this USB audio adapter
 PYGAME_CHANNELS  = 2              # stereo — mono (1) is often unsupported at hardware level

@@ -17,14 +17,12 @@ class AudioCapture:
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file."""
         pa = pyaudio.PyAudio()
-        stream = pa.open(rate=config.RECORD_RATE, channels=1, format=pyaudio.paInt16,
-                         input=True, input_device_index=config.AUDIO_INPUT_DEVICE,
-                         frames_per_buffer=_CHUNK)
+        stream = pa.open(rate=16000, channels=1, format=pyaudio.paInt16,
+                         input=True, frames_per_buffer=_CHUNK)
 
         frames = []
         silent_chunks = 0
-        # How many consecutive silent chunks equal SILENCE_TIMEOUT seconds
-        silence_limit = int(config.SILENCE_TIMEOUT * config.RECORD_RATE / _CHUNK)
+        silence_limit = int(config.SILENCE_TIMEOUT * 16000 / _CHUNK)
 
         print("Recording...")
         while True:
@@ -45,16 +43,12 @@ class AudioCapture:
         stream.close()
         pa.terminate()
 
-        # Mic is mono; duplicate to stereo so pygame's stereo mixer plays at correct speed.
-        mono = np.frombuffer(b"".join(frames), dtype=np.int16)
-        stereo = np.column_stack((mono, mono)).flatten()
-
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         with wave.open(tmp.name, "wb") as wf:
-            wf.setnchannels(2)
+            wf.setnchannels(1)
             wf.setsampwidth(2)
-            wf.setframerate(config.RECORD_RATE)
-            wf.writeframes(stereo.tobytes())
+            wf.setframerate(16000)
+            wf.writeframes(b"".join(frames))
 
         print(f"Saved recording to {tmp.name}")
         return tmp.name
