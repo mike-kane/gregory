@@ -14,42 +14,13 @@ _CHUNK = 1024
 
 
 class AudioCapture:
-    def _play_ready_beep(self) -> None:
-        """Play a short beep to signal that recording is open.
-
-        Uses aplay (subprocess) with raw PCM piped via stdin — this approach was
-        confirmed working on this hardware. aplay is used rather than pygame so
-        the ALSA device is fully released before pyaudio opens its capture stream.
-        """
-        import subprocess
-
-        rate = config.PYGAME_FREQUENCY  # confirmed working rate for this USB adapter
-        freq = 880
-        duration = 0.25
-        n = int(rate * duration)
-        t = np.arange(n) / rate
-        tone = (np.sin(2 * np.pi * freq * t) * 16383).astype(np.int16)
-
-        result = subprocess.run(
-            ["aplay", "-D", config.AUDIO_DEVICE, "-f", "S16_LE",
-             "-r", str(rate), "-c", "1", "-t", "raw"],
-            input=tone.tobytes(),
-            stderr=subprocess.PIPE,
-            timeout=3,
-        )
-        if result.returncode != 0:
-            print(f"[beep] aplay error: {result.stderr.decode().strip()}")
-
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file.
 
-        Plays a beep, then measures ambient noise for 0.5 s to set an adaptive
-        speech threshold (3× baseline). This makes detection robust to different
-        mic gain levels and room noise floors without manual tuning.
-        Silence detection only begins after speech is first detected.
+        Measures ambient noise for 0.5 s to set an adaptive speech threshold
+        (3× baseline). Silence detection only begins after speech is first detected.
+        In the full product, motor movement signals that Gregory is listening.
         """
-        self._play_ready_beep()
-
         pa = pyaudio.PyAudio()
         stream = pa.open(rate=16000, channels=1, format=pyaudio.paInt16,
                          input=True, frames_per_buffer=_CHUNK)
