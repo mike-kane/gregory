@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import numpy as np
-import librosa
+import soundfile as sf
 import config
 
 
@@ -17,28 +17,34 @@ class MouthSync:
         """
         Return a list of booleans at MOTOR_FPS rate.
         True means mouth should be open for that frame.
+        Uses soundfile+numpy instead of librosa to avoid numba JIT compilation,
+        which adds 20+ seconds on first run on a Pi Zero 2W.
         """
-        y, sr = librosa.load(self._path, sr=None, mono=True)
-        hop_length = int(sr / config.MOTOR_FPS)
-        rms = librosa.feature.rms(y=y, hop_length=hop_length)[0]
+        samples, sr = sf.read(self._path, dtype="float32", always_2d=False)
+        if samples.ndim == 2:
+            samples = samples.mean(axis=1)  # stereo → mono for amplitude analysis
 
-        # Normalise so the loudest frame = 1.0
-        max_rms = rms.max()
+        hop = max(1, int(sr / config.MOTOR_FPS))
+        n_hops = len(samples) // hop
+
+        rms_values = np.array([
+            np.sqrt(np.mean(samples[i * hop:(i + 1) * hop] ** 2))
+            for i in range(n_hops)
+        ])
+
+        max_rms = rms_values.max()
         if max_rms > 0:
-            rms = rms / max_rms
+            rms_values /= max_rms
 
-        timeline = [float(v) >= config.MOUTH_OPEN_THRESHOLD for v in rms]
-        return timeline
+        return [float(v) >= config.MOUTH_OPEN_THRESHOLD for v in rms_values]
 
 
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) < 2:
-        print("Usage: python mouth_sync.py <audio.mp3>")
+        print("Usage: python mouth_sync.py <audio_file>")
         sys.exit(1)
 
     ms = MouthSync(sys.argv[1])
     tl = ms.build_timeline()
     open_frames = sum(tl)
-    print(f"{len(tl)} frames, {open_frames} open ({100*open_frames//len(tl)}%)")
+    print(f"{len(tl)} frames, {open_frames} open ({100 * open_frames // len(tl)}%)")

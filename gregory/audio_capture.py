@@ -17,7 +17,7 @@ class AudioCapture:
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file."""
         pa = pyaudio.PyAudio()
-        stream = pa.open(rate=config.RECORD_RATE, channels=1, format=pyaudio.paInt16,
+        stream = pa.open(rate=config.RECORD_RATE, channels=2, format=pyaudio.paInt16,
                          input=True, input_device_index=config.AUDIO_INPUT_DEVICE,
                          frames_per_buffer=_CHUNK)
 
@@ -47,7 +47,7 @@ class AudioCapture:
 
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         with wave.open(tmp.name, "wb") as wf:
-            wf.setnchannels(1)
+            wf.setnchannels(2)
             wf.setsampwidth(2)
             wf.setframerate(config.RECORD_RATE)
             wf.writeframes(b"".join(frames))

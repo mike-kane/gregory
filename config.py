@@ -1,5 +1,5 @@
 WAKE_WORD_MODEL = "hey_gregory"
-RECORD_RATE = 44100                # recording sample rate — must be supported by USB mic
+RECORD_RATE = 44000                # must match PYGAME_FREQUENCY — confirmed native rate
 SILENCE_THRESHOLD = 500
 SILENCE_TIMEOUT = 2.0
 WHISPER_MODEL = "whisper-1"
