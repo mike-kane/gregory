@@ -17,3 +17,5 @@ TAIL_BIN2  = 23
 AUDIO_INPUT_DEVICE  = 0            # USB microphone (card 0)
 AUDIO_OUTPUT_DEVICE = 1            # USB audio adapter (card 1)
 AUDIO_DEVICE = "plughw:1,0"       # ALSA device string for pygame / aplay
+PYGAME_FREQUENCY = 48000           # USB audio adapters native rate; try 44100 if crackling
+PYGAME_CHANNELS  = 2              # stereo — mono (1) is often unsupported at hardware level

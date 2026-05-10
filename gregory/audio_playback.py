@@ -14,11 +14,12 @@ import threading
 import time
 import pygame
 
-# Initialise mixer once at import time using 44100 Hz — the rate ALSA hardware
-# supports natively. Initialising at 16000 Hz causes ALSA to fall back to
-# software resampling negotiation, which adds 10+ seconds on the Pi.
-# pygame resamples audio files to this rate internally at negligible cost.
-pygame.mixer.pre_init(frequency=44100, size=-16, channels=1, buffer=512)
+# Initialise mixer once at import time. USB audio adapters run natively at 48000 Hz
+# stereo; initialising at any other rate/channel count causes ALSA to negotiate
+# software resampling, adding 10+ seconds on the Pi. pygame resamples audio files
+# to this rate internally at negligible cost.
+pygame.mixer.pre_init(frequency=config.PYGAME_FREQUENCY, size=-16,
+                      channels=config.PYGAME_CHANNELS, buffer=512)
 pygame.mixer.init()
 
 
