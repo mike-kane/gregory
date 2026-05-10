@@ -28,5 +28,6 @@ MOUTH_AIN2 = 27
 TAIL_BIN1  = 22
 TAIL_BIN2  = 23
 AUDIO_DEVICE = "plughw:1,0"       # ALSA device string for pygame / aplay
+MIC_CARD = 0                      # ALSA card number for the USB microphone (card 0)
 PYGAME_FREQUENCY = 44000           # confirmed native rate for this USB audio adapter
 PYGAME_CHANNELS  = 2              # stereo — mono (1) is often unsupported at hardware level

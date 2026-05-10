@@ -32,16 +32,30 @@ class WakeWordDetector:
         self._model = Model(wakeword_model_paths=[matches[0]])
 
         # Keep one PyAudio instance alive for the detector's lifetime.
-        # Calling pa.terminate() + PyAudio() on each loop iteration causes ALSA
-        # to re-probe devices and lose the rate negotiation that succeeded the
-        # first time, producing "Invalid sample rate" on the second call.
+        # Calling pa.terminate() + PyAudio() between detections causes ALSA to
+        # re-probe devices and can produce "Invalid sample rate" on subsequent calls.
         self._pa = pyaudio.PyAudio()
+        # Bypass the ALSA 'default' PCM (which routes through dsnoop) by
+        # targeting the hardware device for MIC_CARD directly. dsnoop's shared
+        # memory gets into a bad state after many open/close cycles, causing
+        # "Illegal combination of I/O devices" on the Nth detection.
+        self._mic_index = self._find_mic_device_index()
+
+    def _find_mic_device_index(self) -> int | None:
+        """Return the portaudio device index for config.MIC_CARD, or None."""
+        target = f"hw:{config.MIC_CARD},"
+        for i in range(self._pa.get_device_count()):
+            info = self._pa.get_device_info_by_index(i)
+            if info["maxInputChannels"] > 0 and target in info.get("name", ""):
+                return i
+        return None  # fall back to ALSA default if not found
 
     def wait_for_wake_word(self) -> None:
         """Block until the configured wake word is detected, then return."""
         stream = self._pa.open(
             rate=16000, channels=1, format=pyaudio.paInt16,
             input=True, frames_per_buffer=_FRAME_SAMPLES,
+            input_device_index=self._mic_index,
         )
         print("Listening for wake word...")
         try:
