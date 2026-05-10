@@ -6,31 +6,33 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import tempfile
 import wave
+import numpy as np
 import pyaudio
 import config
+
+_CHUNK = 1024
 
 
 class AudioCapture:
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file."""
         pa = pyaudio.PyAudio()
-        stream = pa.open(rate=16000, channels=1, format=pyaudio.paInt16,
+        stream = pa.open(rate=config.RECORD_RATE, channels=1, format=pyaudio.paInt16,
                          input=True, input_device_index=config.AUDIO_INPUT_DEVICE,
-                         frames_per_buffer=1024)
+                         frames_per_buffer=_CHUNK)
 
         frames = []
         silent_chunks = 0
         # How many consecutive silent chunks equal SILENCE_TIMEOUT seconds
-        chunks_per_second = 16000 / 1024
-        silence_limit = int(config.SILENCE_TIMEOUT * chunks_per_second)
+        silence_limit = int(config.SILENCE_TIMEOUT * config.RECORD_RATE / _CHUNK)
 
         print("Recording...")
         while True:
-            chunk = stream.read(1024, exception_on_overflow=False)
+            chunk = stream.read(_CHUNK, exception_on_overflow=False)
             frames.append(chunk)
 
-            import audioop
-            rms = audioop.rms(chunk, 2)
+            # audioop was removed in Python 3.13 — compute RMS via numpy instead
+            rms = np.sqrt(np.mean(np.frombuffer(chunk, dtype=np.int16).astype(np.float32) ** 2))
             if rms < config.SILENCE_THRESHOLD:
                 silent_chunks += 1
             else:
@@ -47,7 +49,7 @@ class AudioCapture:
         with wave.open(tmp.name, "wb") as wf:
             wf.setnchannels(1)
             wf.setsampwidth(2)
-            wf.setframerate(16000)
+            wf.setframerate(config.RECORD_RATE)
             wf.writeframes(b"".join(frames))
 
         print(f"Saved recording to {tmp.name}")
