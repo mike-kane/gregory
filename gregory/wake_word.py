@@ -17,7 +17,7 @@ class WakeWordDetector:
         from openwakeword.model import Model
         # WAKE_WORD_MODEL is a placeholder ("hey_jarvis") until a custom
         # "hey_gregory" model is trained and dropped in here.
-        self._model = Model(wakeword_models=[config.WAKE_WORD_MODEL])
+        self._model = Model(wakeword_model_paths=[config.WAKE_WORD_MODEL])
 
     def wait_for_wake_word(self) -> None:
         """Block until the configured wake word is detected, then return."""
