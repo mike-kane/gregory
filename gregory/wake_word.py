@@ -31,10 +31,15 @@ class WakeWordDetector:
             )
         self._model = Model(wakeword_model_paths=[matches[0]])
 
+        # Keep one PyAudio instance alive for the detector's lifetime.
+        # Calling pa.terminate() + PyAudio() on each loop iteration causes ALSA
+        # to re-probe devices and lose the rate negotiation that succeeded the
+        # first time, producing "Invalid sample rate" on the second call.
+        self._pa = pyaudio.PyAudio()
+
     def wait_for_wake_word(self) -> None:
         """Block until the configured wake word is detected, then return."""
-        pa = pyaudio.PyAudio()
-        stream = pa.open(
+        stream = self._pa.open(
             rate=16000, channels=1, format=pyaudio.paInt16,
             input=True, frames_per_buffer=_FRAME_SAMPLES,
         )
@@ -45,7 +50,7 @@ class WakeWordDetector:
                 audio = np.frombuffer(chunk, dtype=np.int16)
                 prediction = self._model.predict(audio)
                 # Use max score across all loaded models — the dict key format
-                # varies across openWakeWord versions, so avoid relying on the
+                # varies across openWakeWord versions so avoid relying on the
                 # exact key name matching WAKE_WORD_MODEL.
                 if prediction and max(prediction.values()) > config.WAKE_WORD_THRESHOLD:
                     print("Wake word detected.")
@@ -53,12 +58,21 @@ class WakeWordDetector:
         finally:
             stream.stop_stream()
             stream.close()
-            pa.terminate()
+            # Do NOT terminate self._pa here — reuse it on the next call.
+
+    def close(self) -> None:
+        """Release the PyAudio instance. Call once on shutdown."""
+        self._pa.terminate()
 
 
 if __name__ == "__main__":
     detector = WakeWordDetector()
     print(f"Listening for '{config.WAKE_WORD_MODEL}' — say the wake word, then repeat.")
-    while True:
-        detector.wait_for_wake_word()
-        print("Wake word detected!")
+    try:
+        while True:
+            detector.wait_for_wake_word()
+            print("Wake word detected!")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        detector.close()

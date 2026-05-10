@@ -75,6 +75,7 @@ def main():
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:
+        wake.close()
         motors.cleanup()
         print("Gregory offline.")
 
