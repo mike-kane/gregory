@@ -1,0 +1,28 @@
+# Gregory systemd service — auto-starts on boot.
+#
+# Install:
+#   sudo cp gregory.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable gregory
+#   sudo systemctl start gregory
+#
+# Useful commands:
+#   sudo systemctl status gregory
+#   journalctl -u gregory -f
+
+[Unit]
+Description=Gregory the Talking Fish
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=gregory
+WorkingDirectory=/home/gregory/gregory
+Environment=SDL_AUDIODRIVER=alsa
+Environment=AUDIODEV=plughw:1,0
+ExecStart=/home/gregory/gregory/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

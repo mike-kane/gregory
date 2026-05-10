@@ -25,11 +25,12 @@ pygame.mixer.init()
 
 class AudioPlayer:
     def play_ack(self):
-        """Play a short acknowledgement beep via aplay (no pygame init needed)."""
+        """Play the configured acknowledgement sound, if one is set."""
+        if not config.ACKNOWLEDGEMENT_SOUND:
+            return
         import subprocess
-        # aplay is available on Pi OS; on dev machines this will silently fail
         subprocess.run(
-            ["aplay", "-D", config.AUDIO_DEVICE, "/usr/share/sounds/alsa/Front_Center.wav"],
+            ["aplay", "-D", config.AUDIO_DEVICE, config.ACKNOWLEDGEMENT_SOUND],
             stderr=subprocess.DEVNULL,
         )
 

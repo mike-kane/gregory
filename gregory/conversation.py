@@ -13,6 +13,10 @@ class Conversation:
         self._client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self._history = []
 
+    def reset(self) -> None:
+        """Clear conversation history to start a fresh session."""
+        self._history = []
+
     def send(self, user_text: str) -> str:
         self._history.append({"role": "user", "content": user_text})
 

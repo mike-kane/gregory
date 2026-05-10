@@ -3,9 +3,13 @@ Entry point for Gregory. Runs the main wake-word → STT → LLM → TTS → mot
 """
 
 import os
+import sys
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
+
+import config
 
 
 def main():
@@ -26,22 +30,53 @@ def main():
     player = AudioPlayer()
     motors = MotorController()
 
-    print("Gregory is ready. Say 'Hey Gregory' to start.")
+    last_response_time = None
+    print("Gregory is ready. Listening for wake word.")
 
-    while True:
-        wake.wait_for_wake_word()
-        player.play_ack()
+    try:
+        while True:
+            wake.wait_for_wake_word()
 
-        audio_path = capture.record_until_silence()
-        transcript = transcriber.transcribe(audio_path)
-        if not transcript.strip():
-            continue
+            # Reset conversation history if the user has been away long enough.
+            if last_response_time is not None:
+                if time.time() - last_response_time > config.CONVERSATION_TIMEOUT:
+                    conversation.reset()
+                    print("[conversation reset — timeout]")
 
-        response_text = conversation.send(transcript)
-        audio_path = tts.synthesise(response_text)
-        mouth_timeline = MouthSync(audio_path).build_timeline()
+            # Acknowledge wake word, then open mouth to signal we're listening.
+            player.play_ack()
+            motors.mouth_open()
 
-        player.play_with_motors(audio_path, mouth_timeline, motors)
+            try:
+                audio_path = capture.record_until_silence()
+                motors.mouth_close()
+
+                transcript = transcriber.transcribe(audio_path)
+                if not transcript.strip():
+                    continue
+
+                print(f"You: {transcript}")
+                response_text = conversation.send(transcript)
+                tts_path = tts.synthesise(response_text)
+                timeline = MouthSync(tts_path).build_timeline()
+                player.play_with_motors(tts_path, timeline, motors)
+
+                last_response_time = time.time()
+
+            except Exception as e:
+                print(f"[pipeline error] {e}", file=sys.stderr)
+                # Ensure motors are in a safe state before continuing.
+                try:
+                    motors.tail_stop()
+                    motors.mouth_close()
+                except Exception:
+                    pass
+
+    except KeyboardInterrupt:
+        print("\nShutting down...")
+    finally:
+        motors.cleanup()
+        print("Gregory offline.")
 
 
 if __name__ == "__main__":

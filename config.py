@@ -1,4 +1,7 @@
-WAKE_WORD_MODEL = "hey_gregory"
+WAKE_WORD_MODEL = "hey_jarvis"      # placeholder — swap for a custom "hey_gregory" model later
+WAKE_WORD_THRESHOLD = 0.5
+ACKNOWLEDGEMENT_SOUND = None        # path to a short WAV, or None to skip
+CONVERSATION_TIMEOUT = 30           # seconds of inactivity before conversation history resets
 SILENCE_THRESHOLD = 300         # minimum floor for adaptive threshold (see audio_capture.py)
 MIC_GAIN = 4.0                  # software amplification — raise if mic doesn't pick up at distance
 SILENCE_TIMEOUT = 1.2           # seconds of silence after speech before stopping
