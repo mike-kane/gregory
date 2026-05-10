@@ -14,10 +14,22 @@ _FRAME_SAMPLES = 1280
 
 class WakeWordDetector:
     def __init__(self):
+        import glob
+        import openwakeword
         from openwakeword.model import Model
-        # WAKE_WORD_MODEL is a placeholder ("hey_jarvis") until a custom
-        # "hey_gregory" model is trained and dropped in here.
-        self._model = Model(wakeword_model_paths=[config.WAKE_WORD_MODEL])
+
+        # Models are bundled as versioned .onnx files, e.g. hey_jarvis_v0.1.onnx.
+        # Glob for any file matching the configured name so the version suffix
+        # doesn't need to be hardcoded in config.py.
+        # WAKE_WORD_MODEL is a placeholder until a custom "hey_gregory" model is trained.
+        resources = os.path.join(os.path.dirname(openwakeword.__file__),
+                                 "resources", "models")
+        matches = glob.glob(os.path.join(resources, f"{config.WAKE_WORD_MODEL}*.onnx"))
+        if not matches:
+            raise FileNotFoundError(
+                f"No model file found for '{config.WAKE_WORD_MODEL}' in {resources}"
+            )
+        self._model = Model(wakeword_model_paths=[matches[0]])
 
     def wait_for_wake_word(self) -> None:
         """Block until the configured wake word is detected, then return."""
