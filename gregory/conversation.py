@@ -22,7 +22,7 @@ class Conversation:
 
         kwargs = {
             "model": config.CLAUDE_MODEL,
-            "max_tokens": 512,
+            "max_tokens": config.MAX_RESPONSE_TOKENS,
             "messages": self._history,
         }
 

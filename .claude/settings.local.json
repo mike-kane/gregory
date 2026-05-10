@@ -4,7 +4,17 @@
       "WebFetch(domain:github.com)",
       "Bash(python -m venv venv)",
       "Bash(venv\\\\Scripts\\\\pip install *)",
-      "PowerShell(cd \"c:\\\\Users\\\\medio\\\\OneDrive\\\\Desktop\\\\Gregory\"; $env:PYTHONUTF8=1; .\\\\venv\\\\Scripts\\\\python tests\\\\test_pipeline.py --text \"tell me a fish joke\")"
+      "PowerShell(cd \"c:\\\\Users\\\\medio\\\\OneDrive\\\\Desktop\\\\Gregory\"; $env:PYTHONUTF8=1; .\\\\venv\\\\Scripts\\\\python tests\\\\test_pipeline.py --text \"tell me a fish joke\")",
+      "Bash(python3 -c \"from elevenlabs import VoiceSettings; import inspect; print\\(inspect.signature\\(VoiceSettings\\)\\)\")",
+      "Bash(pip3 show *)",
+      "Bash(find /usr /home -name \"*.dist-info\" -path \"*elevenlabs*\" 2>/dev/null | head -3; find ~/Library -name \"*.dist-info\" -path \"*elevenlabs*\" 2>/dev/null | head -3)",
+      "Read(//usr/**)",
+      "Read(//Users/mike-kane-macbook/Library/**)",
+      "Bash(python3 -c \"import site; print\\('\\\\n'.join\\(site.getsitepackages\\(\\)\\)\\)\")",
+      "Bash(find /Users/mike-kane-macbook/.pyenv/versions/3.12.0/lib/python3.12/site-packages -type d -name \"elevenlabs\" 2>/dev/null)",
+      "Read(//Users/mike-kane-macbook/.pyenv/versions/3.12.0/lib/python3.12/site-packages/**)",
+      "Bash(find /Users -type d -name \"elevenlabs\" 2>/dev/null | head -10)",
+      "Read(//Users/**)"
     ]
   }
 }
