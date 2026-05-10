@@ -20,30 +20,45 @@ class AudioCapture:
         Uses aplay (subprocess) rather than pygame so the ALSA device is fully
         released before pyaudio opens its capture stream — pygame holding the
         device open causes dsnoop to fail on the subsequent pa.open() call.
-        Best-effort: silently skipped if aplay is unavailable (e.g. macOS).
+        Writes a proper WAV file so aplay can read format details from the header
+        rather than relying on raw PCM flags which some adapters reject.
         """
+        import subprocess
+        import tempfile
+        import wave as wave_mod
+
+        rate = config.PYGAME_FREQUENCY  # confirmed working rate for this USB adapter
+        freq = 880
+        duration = 0.25
+        n = int(rate * duration)
+        t = np.arange(n) / rate
+        tone = (np.sin(2 * np.pi * freq * t) * 16383).astype(np.int16)
+
+        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         try:
-            import subprocess
-            freq = 880
-            n = int(config.PYGAME_FREQUENCY * 0.2)
-            t = np.arange(n) / config.PYGAME_FREQUENCY
-            tone = (np.sin(2 * np.pi * freq * t) * 16383).astype(np.int16)
-            subprocess.run(
-                ["aplay", "-D", config.AUDIO_DEVICE, "-f", "S16_LE",
-                 "-r", str(config.PYGAME_FREQUENCY), "-c", "1", "-t", "raw"],
-                input=tone.tobytes(),
-                stderr=subprocess.DEVNULL,
-                timeout=2,
+            with wave_mod.open(tmp.name, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(rate)
+                wf.writeframes(tone.tobytes())
+            result = subprocess.run(
+                ["aplay", "-D", config.AUDIO_DEVICE, tmp.name],
+                capture_output=True, timeout=3,
             )
-        except Exception:
-            pass
+            if result.returncode != 0:
+                print(f"[beep] aplay failed: {result.stderr.decode().strip()}")
+        except Exception as e:
+            print(f"[beep] error: {e}")
+        finally:
+            os.unlink(tmp.name)
 
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file.
 
-        Plays a beep before opening the mic so the speaker knows when to start.
-        Silence detection only kicks in after actual speech is detected, so
-        ambient quiet at the start of a recording never triggers an early exit.
+        Plays a beep, then measures ambient noise for 0.5 s to set an adaptive
+        speech threshold (3× baseline). This makes detection robust to different
+        mic gain levels and room noise floors without manual tuning.
+        Silence detection only begins after speech is first detected.
         """
         self._play_ready_beep()
 
@@ -51,19 +66,28 @@ class AudioCapture:
         stream = pa.open(rate=16000, channels=1, format=pyaudio.paInt16,
                          input=True, frames_per_buffer=_CHUNK)
 
+        # Calibrate: measure ambient noise for 0.5 s while the room is still quiet.
+        cal_chunks = int(0.5 * 16000 / _CHUNK)
+        cal_data = b"".join(stream.read(_CHUNK, exception_on_overflow=False)
+                            for _ in range(cal_chunks))
+        baseline = np.sqrt(np.mean(
+            np.frombuffer(cal_data, dtype=np.int16).astype(np.float32) ** 2
+        ))
+        # Floor from config prevents accidental triggers in near-silent rooms.
+        threshold = max(config.SILENCE_THRESHOLD, baseline * 3.0)
+        print(f"Baseline: {baseline:.0f} RMS  |  threshold: {threshold:.0f}  |  Recording...")
+
         frames = []
         silent_chunks = 0
         speech_detected = False
         silence_limit = int(config.SILENCE_TIMEOUT * 16000 / _CHUNK)
 
-        print("Recording...")
         while True:
             chunk = stream.read(_CHUNK, exception_on_overflow=False)
             frames.append(chunk)
 
-            # audioop was removed in Python 3.13 — compute RMS via numpy instead
             rms = np.sqrt(np.mean(np.frombuffer(chunk, dtype=np.int16).astype(np.float32) ** 2))
-            if rms >= config.SILENCE_THRESHOLD:
+            if rms >= threshold:
                 speech_detected = True
                 silent_chunks = 0
             elif speech_detected:
