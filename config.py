@@ -1,5 +1,6 @@
 WAKE_WORD_MODEL = "hey_gregory"
 SILENCE_THRESHOLD = 300         # minimum floor for adaptive threshold (see audio_capture.py)
+MIC_GAIN = 4.0                  # software amplification — raise if mic doesn't pick up at distance
 SILENCE_TIMEOUT = 1.2           # seconds of silence after speech before stopping
 WHISPER_MODEL = "whisper-1"
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"

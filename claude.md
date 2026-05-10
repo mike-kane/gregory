@@ -19,6 +19,8 @@ Gregory is a Raspberry Pi Zero 2W-powered talking fish (a modified Billy Big Mou
 - **Fish speaker** → Fermion amp output (blue wires)
 - **On/off switch** → kept in circuit on power line from battery compartment
 
+Full documentation on the hardware can be found in hardware.md.
+
 ### GPIO Pin Assignments (Pi Zero 2W)
 
 ```
@@ -100,27 +102,32 @@ gregory/
 ## Key Design Decisions
 
 ### Wake Word
+
 - Use **openWakeWord** for local wake word detection (runs on Pi Zero 2W)
 - Default wake phrase: "Hey Gregory"
 - On detection: play a short acknowledgement sound, then begin recording
 
 ### Speech-to-Text
+
 - Use **OpenAI Whisper API** (not local Whisper — too slow on Pi Zero)
 - Record until silence is detected (energy threshold + silence timeout)
 - Save to a temporary WAV file, send to Whisper, receive transcript
 
 ### LLM
+
 - Use **Anthropic Claude API** (`claude-sonnet-4-20250514` or latest available)
 - Maintain a conversation history list for multi-turn dialogue
 - System prompt is loaded from `config.py` — no personality is hardcoded; fully configurable by the user
 - Keep responses concise by default (this is a spoken conversation, not a text chat)
 
 ### Text-to-Speech
+
 - Use **ElevenLabs API** for voice synthesis
 - Voice ID is configurable in `config.py`
 - Cache TTS responses locally by hash of input text to avoid repeat API calls for identical phrases
 
 ### Motor Control
+
 - **Mouth motor**: driven by amplitude analysis of TTS audio output
   - Before playback, analyse audio with `librosa` to extract RMS energy per frame
   - Normalise to 0.0–1.0 range
@@ -131,6 +138,7 @@ gregory/
 - Motor direction: note which polarity opens vs closes mouth during hardware setup and record in `config.py`
 
 ### Audio Playback
+
 - Use `pygame.mixer` or `aplay` subprocess for playback through USB audio adapter
 - Playback and motor sync must run in parallel (threading)
 
@@ -176,14 +184,17 @@ ELEVENLABS_API_KEY=
 ## Development Workflow
 
 ### On a dev machine (no Pi, no hardware)
+
 - GPIO calls stub out automatically when `RPi.GPIO` is not importable
 - Use `tests/test_pipeline.py` to run STT → LLM → TTS end-to-end through laptop speakers
 
 ### On the Pi
+
 - SSH in via ethernet hub
 - Run `python main.py` from within the virtualenv
 
 ### Order of bring-up
+
 1. Test motors independently (`test_motors.py`)
 2. Test mic input and speaker output (`test_audio.py`)
 3. Test full pipeline without motors (`test_pipeline.py`)
@@ -216,5 +227,5 @@ python-dotenv
 - Add `if __name__ == "__main__"` blocks to each module in `gregory/` for standalone testing
 - Never hardcode API keys
 - GPIO stub pattern: wrap all GPIO imports in try/except and provide a `MockGPIO` class for dev machine use
-- Comments should explain *why*, not *what*
+- Comments should explain _why_, not _what_
 - When in doubt, make it configurable in `config.py` rather than hardcoding

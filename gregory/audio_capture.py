@@ -17,15 +17,11 @@ class AudioCapture:
     def _play_ready_beep(self) -> None:
         """Play a short beep to signal that recording is open.
 
-        Uses aplay (subprocess) rather than pygame so the ALSA device is fully
-        released before pyaudio opens its capture stream — pygame holding the
-        device open causes dsnoop to fail on the subsequent pa.open() call.
-        Writes a proper WAV file so aplay can read format details from the header
-        rather than relying on raw PCM flags which some adapters reject.
+        Uses aplay (subprocess) with raw PCM piped via stdin — this approach was
+        confirmed working on this hardware. aplay is used rather than pygame so
+        the ALSA device is fully released before pyaudio opens its capture stream.
         """
         import subprocess
-        import tempfile
-        import wave as wave_mod
 
         rate = config.PYGAME_FREQUENCY  # confirmed working rate for this USB adapter
         freq = 880
@@ -34,23 +30,15 @@ class AudioCapture:
         t = np.arange(n) / rate
         tone = (np.sin(2 * np.pi * freq * t) * 16383).astype(np.int16)
 
-        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-        try:
-            with wave_mod.open(tmp.name, "wb") as wf:
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(rate)
-                wf.writeframes(tone.tobytes())
-            result = subprocess.run(
-                ["aplay", "-D", config.AUDIO_DEVICE, tmp.name],
-                capture_output=True, timeout=3,
-            )
-            if result.returncode != 0:
-                print(f"[beep] aplay failed: {result.stderr.decode().strip()}")
-        except Exception as e:
-            print(f"[beep] error: {e}")
-        finally:
-            os.unlink(tmp.name)
+        result = subprocess.run(
+            ["aplay", "-D", config.AUDIO_DEVICE, "-f", "S16_LE",
+             "-r", str(rate), "-c", "1", "-t", "raw"],
+            input=tone.tobytes(),
+            stderr=subprocess.PIPE,
+            timeout=3,
+        )
+        if result.returncode != 0:
+            print(f"[beep] aplay error: {result.stderr.decode().strip()}")
 
     def record_until_silence(self) -> str:
         """Record audio and return path to a temporary WAV file.
@@ -84,9 +72,14 @@ class AudioCapture:
 
         while True:
             chunk = stream.read(_CHUNK, exception_on_overflow=False)
-            frames.append(chunk)
 
-            rms = np.sqrt(np.mean(np.frombuffer(chunk, dtype=np.int16).astype(np.float32) ** 2))
+            # Apply software gain so a distant mic can still trigger detection.
+            # Clip to int16 range to prevent wrap-around distortion.
+            samples = np.frombuffer(chunk, dtype=np.int16).astype(np.float32)
+            samples = np.clip(samples * config.MIC_GAIN, -32768, 32767).astype(np.int16)
+            frames.append(samples.tobytes())
+
+            rms = np.sqrt(np.mean(samples.astype(np.float32) ** 2))
             if rms >= threshold:
                 speech_detected = True
                 silent_chunks = 0
