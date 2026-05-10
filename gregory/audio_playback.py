@@ -4,14 +4,27 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import config
+
+# Must be set before pygame is imported — SDL reads them at import time.
+os.environ['SDL_AUDIODRIVER'] = 'alsa'
+os.environ['AUDIODEV'] = config.AUDIO_DEVICE
+
 import threading
 import time
-import config
+import pygame
+
+# Initialise mixer once at import time using 44100 Hz — the rate ALSA hardware
+# supports natively. Initialising at 16000 Hz causes ALSA to fall back to
+# software resampling negotiation, which adds 10+ seconds on the Pi.
+# pygame resamples audio files to this rate internally at negligible cost.
+pygame.mixer.pre_init(frequency=44100, size=-16, channels=1, buffer=512)
+pygame.mixer.init()
 
 
 class AudioPlayer:
     def play_ack(self):
-        """Play a short acknowledgement beep (subprocess so no pygame init needed)."""
+        """Play a short acknowledgement beep via aplay (no pygame init needed)."""
         import subprocess
         # aplay is available on Pi OS; on dev machines this will silently fail
         subprocess.run(
@@ -21,9 +34,6 @@ class AudioPlayer:
 
     def play_with_motors(self, audio_path: str, timeline: list, motors):
         """Play audio while driving motors according to the mouth timeline."""
-        import pygame
-
-        pygame.mixer.init()
         pygame.mixer.music.load(audio_path)
 
         frame_duration = 1.0 / config.MOTOR_FPS
@@ -47,11 +57,9 @@ class AudioPlayer:
             time.sleep(0.01)
 
         t.join(timeout=2)
-        pygame.mixer.quit()
 
 
 if __name__ == "__main__":
-    import sys
     from dotenv import load_dotenv
     load_dotenv()
 

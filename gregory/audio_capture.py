@@ -15,7 +15,8 @@ class AudioCapture:
         """Record audio and return path to a temporary WAV file."""
         pa = pyaudio.PyAudio()
         stream = pa.open(rate=16000, channels=1, format=pyaudio.paInt16,
-                         input=True, frames_per_buffer=1024)
+                         input=True, input_device_index=config.AUDIO_INPUT_DEVICE,
+                         frames_per_buffer=1024)
 
         frames = []
         silent_chunks = 0

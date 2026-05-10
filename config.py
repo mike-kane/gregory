@@ -14,4 +14,6 @@ MOUTH_AIN1 = 17
 MOUTH_AIN2 = 27
 TAIL_BIN1  = 22
 TAIL_BIN2  = 23
-AUDIO_DEVICE = "plughw:1,0"
+AUDIO_INPUT_DEVICE  = 0            # USB microphone (card 0)
+AUDIO_OUTPUT_DEVICE = 1            # USB audio adapter (card 1)
+AUDIO_DEVICE = "plughw:1,0"       # ALSA device string for pygame / aplay
