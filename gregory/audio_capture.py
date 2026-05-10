@@ -15,22 +15,26 @@ _CHUNK = 1024
 
 class AudioCapture:
     def _play_ready_beep(self) -> None:
-        """Play a short beep through pygame to signal that recording is open.
+        """Play a short beep to signal that recording is open.
 
-        Best-effort: if pygame isn't initialised (e.g. standalone test run),
-        we skip silently rather than crashing.
+        Uses aplay (subprocess) rather than pygame so the ALSA device is fully
+        released before pyaudio opens its capture stream — pygame holding the
+        device open causes dsnoop to fail on the subsequent pa.open() call.
+        Best-effort: silently skipped if aplay is unavailable (e.g. macOS).
         """
         try:
-            import pygame
-            sample_rate = config.PYGAME_FREQUENCY
-            duration = 0.2
-            t = np.linspace(0, duration, int(sample_rate * duration), False)
-            tone = (np.sin(2 * np.pi * 880 * t) * 32767 * 0.5).astype(np.int16)
-            # Mixer is initialised as stereo; make_sound needs matching shape.
-            tone_data = np.column_stack([tone, tone]) if config.PYGAME_CHANNELS == 2 else tone
-            sound = pygame.sndarray.make_sound(tone_data)
-            sound.play()
-            pygame.time.wait(int(duration * 1000) + 80)
+            import subprocess
+            freq = 880
+            n = int(config.PYGAME_FREQUENCY * 0.2)
+            t = np.arange(n) / config.PYGAME_FREQUENCY
+            tone = (np.sin(2 * np.pi * freq * t) * 16383).astype(np.int16)
+            subprocess.run(
+                ["aplay", "-D", config.AUDIO_DEVICE, "-f", "S16_LE",
+                 "-r", str(config.PYGAME_FREQUENCY), "-c", "1", "-t", "raw"],
+                input=tone.tobytes(),
+                stderr=subprocess.DEVNULL,
+                timeout=2,
+            )
         except Exception:
             pass
 
