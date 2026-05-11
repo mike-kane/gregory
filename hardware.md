@@ -139,6 +139,38 @@ All other GPIO pins are unused.
 
 ---
 
+## Required ALSA Configuration
+
+Create `~/.asoundrc` on the Pi. Without this file, the ALSA `default` capture
+device routes through the `dsnoop` sharing plugin, which corrupts its shared
+memory after many pyaudio open/close cycles and produces "Illegal combination
+of I/O devices" errors during wake word detection.
+
+```
+pcm.!default {
+    type asym
+    playback.pcm {
+        type plug
+        slave.pcm "hw:1,0"
+    }
+    capture.pcm {
+        type plug
+        slave.pcm "hw:0,0"
+    }
+}
+
+ctl.!default {
+    type hw
+    card 1
+}
+```
+
+This routes the default capture device to `plughw:0,0` (USB microphone, with
+ALSA plug handling rate/format conversion) and default playback to `plughw:1,0`
+(USB audio adapter), both without dsnoop or dmix.
+
+---
+
 ## Known Quirks and Gotchas
 
 - **ALSA warnings on startup** — a large block of ALSA warnings about unknown PCM
