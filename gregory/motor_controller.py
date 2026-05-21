@@ -10,11 +10,6 @@ import config
 
 try:
     import RPi.GPIO as GPIO
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(config.MOUTH_AIN1, GPIO.OUT)
-    GPIO.setup(config.MOUTH_AIN2, GPIO.OUT)
-    GPIO.setup(config.TAIL_BIN1, GPIO.OUT)
-    GPIO.setup(config.TAIL_BIN2, GPIO.OUT)
     _HAS_GPIO = True
 except ImportError:
     _HAS_GPIO = False
@@ -42,6 +37,13 @@ _gpio = GPIO if _HAS_GPIO else MockGPIO()
 
 class MotorController:
     def __init__(self):
+        # GPIO.cleanup() resets pin mode, so setmode/setup must run on each
+        # instantiation rather than once at import time.
+        _gpio.setmode(_gpio.BCM)
+        _gpio.setup(config.MOUTH_AIN1, _gpio.OUT)
+        _gpio.setup(config.MOUTH_AIN2, _gpio.OUT)
+        _gpio.setup(config.TAIL_BIN1, _gpio.OUT)
+        _gpio.setup(config.TAIL_BIN2, _gpio.OUT)
         self._tail_thread = None
         self._tail_running = False
 
