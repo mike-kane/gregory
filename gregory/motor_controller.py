@@ -81,10 +81,18 @@ class MotorController:
         while self._tail_running:
             _gpio.output(config.TAIL_BIN1, True)
             _gpio.output(config.TAIL_BIN2, False)
-            time.sleep(0.4)
+            time.sleep(0.35)
+            # Coast briefly before reversing — direct H-bridge reversal spikes
+            # back-EMF into the DRV8833 and can trigger overcurrent protection.
+            _gpio.output(config.TAIL_BIN1, False)
+            _gpio.output(config.TAIL_BIN2, False)
+            time.sleep(0.05)
             _gpio.output(config.TAIL_BIN1, False)
             _gpio.output(config.TAIL_BIN2, True)
-            time.sleep(0.4)
+            time.sleep(0.35)
+            _gpio.output(config.TAIL_BIN1, False)
+            _gpio.output(config.TAIL_BIN2, False)
+            time.sleep(0.05)
 
     def cleanup(self):
         self.tail_stop()
