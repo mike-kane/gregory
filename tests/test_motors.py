@@ -34,6 +34,8 @@ def test_tail(motors: MotorController):
 if __name__ == "__main__":
     arg = sys.argv[1] if len(sys.argv) > 1 else "both"
     motors = MotorController()
+    print("Waiting 2s for driver to settle...")
+    time.sleep(2)
     try:
         if arg in ("mouth", "both"):
             test_mouth(motors)
