@@ -37,13 +37,19 @@ _gpio = GPIO if _HAS_GPIO else MockGPIO()
 
 class MotorController:
     def __init__(self):
-        # GPIO.cleanup() resets pin mode, so setmode/setup must run on each
-        # instantiation rather than once at import time.
         _gpio.setmode(_gpio.BCM)
         _gpio.setup(config.MOUTH_AIN1, _gpio.OUT)
         _gpio.setup(config.MOUTH_AIN2, _gpio.OUT)
         _gpio.setup(config.TAIL_BIN1, _gpio.OUT)
         _gpio.setup(config.TAIL_BIN2, _gpio.OUT)
+        # Drive all pins LOW immediately so the DRV8833 sees a defined state.
+        # Without this, pins float briefly during setup and can latch the driver
+        # into sleep mode, requiring a power cycle to recover.
+        _gpio.output(config.MOUTH_AIN1, False)
+        _gpio.output(config.MOUTH_AIN2, False)
+        _gpio.output(config.TAIL_BIN1, False)
+        _gpio.output(config.TAIL_BIN2, False)
+        time.sleep(0.05)
         self._tail_thread = None
         self._tail_running = False
 
@@ -80,7 +86,11 @@ class MotorController:
     def cleanup(self):
         self.tail_stop()
         self.mouth_close()
-        _gpio.cleanup()
+        # Drive all pins LOW but do NOT call GPIO.cleanup() — that de-initialises
+        # the GPIO library entirely, causing the DRV8833 to see floating inputs
+        # and requiring a power cycle before subsequent runs work correctly.
+        _gpio.output(config.TAIL_BIN1, False)
+        _gpio.output(config.TAIL_BIN2, False)
 
 
 if __name__ == "__main__":
