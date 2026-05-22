@@ -1,4 +1,10 @@
-"""Verify motor wiring independently of the rest of the pipeline."""
+"""Verify motor wiring independently of the rest of the pipeline.
+
+Usage:
+  python tests/test_motors.py           # run both tests in sequence
+  python tests/test_motors.py mouth     # mouth/head motor only
+  python tests/test_motors.py tail      # tail motor only
+"""
 
 import sys
 import os
@@ -26,9 +32,12 @@ def test_tail(motors: MotorController):
 
 
 if __name__ == "__main__":
+    arg = sys.argv[1] if len(sys.argv) > 1 else "both"
     motors = MotorController()
     try:
-        test_mouth(motors)
-        test_tail(motors)
+        if arg in ("mouth", "both"):
+            test_mouth(motors)
+        if arg in ("tail", "both"):
+            test_tail(motors)
     finally:
         motors.cleanup()
