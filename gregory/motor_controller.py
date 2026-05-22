@@ -16,13 +16,16 @@ except ImportError:
 
 
 class MockGPIO:
-    BCM = OUT = 0
+    BCM = OUT = LOW = 0
 
     @staticmethod
     def setmode(_): pass
 
     @staticmethod
-    def setup(_, __): pass
+    def setwarnings(_): pass
+
+    @staticmethod
+    def setup(*_, **_kw): pass
 
     @staticmethod
     def output(pin, value):
@@ -34,22 +37,23 @@ class MockGPIO:
 
 _gpio = GPIO if _HAS_GPIO else MockGPIO()
 
+# RPi.GPIO can't reliably reinitialise within the same process after cleanup(),
+# so we register it once here and never call it inside MotorController.
+if _HAS_GPIO:
+    import atexit
+    atexit.register(GPIO.cleanup)
+
 
 class MotorController:
     def __init__(self):
         _gpio.setmode(_gpio.BCM)
-        _gpio.setup(config.MOUTH_AIN1, _gpio.OUT)
-        _gpio.setup(config.MOUTH_AIN2, _gpio.OUT)
-        _gpio.setup(config.TAIL_BIN1, _gpio.OUT)
-        _gpio.setup(config.TAIL_BIN2, _gpio.OUT)
-        # Drive all pins LOW immediately so the DRV8833 sees a defined state.
-        # Without this, pins float briefly during setup and can latch the driver
-        # into sleep mode, requiring a power cycle to recover.
-        _gpio.output(config.MOUTH_AIN1, False)
-        _gpio.output(config.MOUTH_AIN2, False)
-        _gpio.output(config.TAIL_BIN1, False)
-        _gpio.output(config.TAIL_BIN2, False)
-        time.sleep(0.05)
+        _gpio.setwarnings(False)
+        # initial=LOW prevents a brief undefined pin state during setup that
+        # would cause an unexpected motor twitch.
+        _gpio.setup(config.MOUTH_AIN1, _gpio.OUT, initial=_gpio.LOW)
+        _gpio.setup(config.MOUTH_AIN2, _gpio.OUT, initial=_gpio.LOW)
+        _gpio.setup(config.TAIL_BIN1,  _gpio.OUT, initial=_gpio.LOW)
+        _gpio.setup(config.TAIL_BIN2,  _gpio.OUT, initial=_gpio.LOW)
         self._tail_thread = None
         self._tail_running = False
 
@@ -74,7 +78,6 @@ class MotorController:
         _gpio.output(config.TAIL_BIN2, False)
 
     def _tail_loop(self):
-        # Simple alternating wag pattern
         while self._tail_running:
             _gpio.output(config.TAIL_BIN1, True)
             _gpio.output(config.TAIL_BIN2, False)
@@ -86,11 +89,6 @@ class MotorController:
     def cleanup(self):
         self.tail_stop()
         self.mouth_close()
-        # Drive all pins LOW but do NOT call GPIO.cleanup() — that de-initialises
-        # the GPIO library entirely, causing the DRV8833 to see floating inputs
-        # and requiring a power cycle before subsequent runs work correctly.
-        _gpio.output(config.TAIL_BIN1, False)
-        _gpio.output(config.TAIL_BIN2, False)
 
 
 if __name__ == "__main__":
